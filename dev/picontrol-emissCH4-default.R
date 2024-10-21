@@ -1,15 +1,16 @@
 # Objective: Run Hector with the emission driven CH4 runs, these will be used to
-# make sure that the model dev are having the effects we expect them to.
+# make sure that the model dev are having the effects we expect them to, right now
+# save a copy of the "default" hector aka before any of the H2 interaction terms
+# have been implement. I suspect that this will help us understand potential
+# interactions during the dev phase. Here we do impulses of all the following
+# emissions CH4, NOx, CO, NMVOC
 
 # 0. Set Up --------------------------------------------------------------------
-# TODO load the correct version of Hector to use, until the h2 dev is merged into
-# main pull you will want to use the h2 dev branch.
-#remotes::install_github("jgcri/hector@dev-h2")
-#library(hector)
-# This is where KD is actively devloping the H2 capabilites on her machince,
-# it will not be useful for others.
-devtools::load_all("/Users/dorh012/Documents/2024/H2Materials/hector")
-
+# Install a specific version of Hector aka the Hector that had tau OH as a potential
+# output but otherwise is default or main.
+tag <- "1e15620"
+remotes::install_github(paste0("jgcri/hector@", tag))
+library(hector)
 library(dplyr)
 library(ggplot2)
 
@@ -22,8 +23,6 @@ vars <- c(GLOBAL_TAS(), RF_CH4(), EMISSIONS_CH4(), EMISSIONS_CO(),
 
 DATA_DIR <- here::here("dev", "data")
 
-# Read in the default data that will be used in comparisons.
-default_rslts <- read.csv(file.path(DATA_DIR, "default_irf.csv"))
 
 # 1. Hector Runs ---------------------------------------------------------------
 
@@ -81,11 +80,20 @@ out5 <- fetchvars(core, dates, vars)
 shutdown(core)
 
 
-
 # 2. Plot Results --------------------------------------------------------------
-# TODO it might be good to compare the results with the default results.
-out <- rbind(out1, out2, out3, out4, out5)
+
+out <- rbind(out1, out2, out3, out4, out5) %>%
+    filter(scenario != "ch4 impulse")
 
 ggplot(out, aes(year, value, color = scenario)) +
     geom_line(size = 1) +
     facet_wrap("variable", scales = "free")
+
+
+# 3. Save Results --------------------------------------------------------------
+# Save some information about which version of Hector this came from, including
+# both the name and git tag might be over kill alas.
+out$source <- "default"
+out$git <- tag
+write.csv(out, file = file.path(DATA_DIR, "default_irf.csv"), row.names = FALSE)
+
