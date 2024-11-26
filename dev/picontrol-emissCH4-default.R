@@ -79,6 +79,7 @@ run(core)
 out5 <- fetchvars(core, dates, vars)
 shutdown(core)
 
+<<<<<<< HEAD
 # 2. Calculate CH4 lifetime ----------------------------------------------------
 
 ini <- "inputs/picontrol_ch4-emiss.ini"
@@ -126,13 +127,7 @@ ggplot(out, aes(year, value, color = scenario)) +
     geom_line(size = 1) +
     facet_wrap("variable", scales = "free")
 
-
-
-
-
-
-
-# 4. Save Results --------------------------------------------------------------
+# 3. Save Results --------------------------------------------------------------
 # Save some information about which version of Hector this came from, including
 # both the name and git tag might be over kill alas.
 out$source <- "default"
