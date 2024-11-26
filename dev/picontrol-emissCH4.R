@@ -81,7 +81,6 @@ out5 <- fetchvars(core, dates, vars)
 shutdown(core)
 
 
-
 # 2. Plot Results --------------------------------------------------------------
 # TODO it might be good to compare the results with the default results.
 out <- rbind(out1, out2, out3, out4, out5)

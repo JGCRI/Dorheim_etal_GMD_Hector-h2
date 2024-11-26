@@ -1,0 +1,100 @@
+---
+title: "H2 Dev"
+output: html_document
+date: "2024-11-04"
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(ggplot2)
+
+theme_set(theme_bw())
+
+# Load Hector, note that since this is using a specific dev version of Hector
+# so load it from machine, otherwise pull the h2 dev branch from github 
+#remotes::install_github("jgcri/hector@dev-h2")
+HECTOR_H2_DIR <- "/Users/dorh012/Documents/2024/H2Materials/hector"
+devtools::load_all(HECTOR_H2_DIR)
+
+# Path to the project
+BASE_DIR <- here::here()
+```
+
+
+
+
+# TAU OH 
+
+Demonstrate that changing the H2 coefficients changes dynamics. 
+
+```{r, message=FALSE}
+# The date and variables of interest. 
+dates <- 1800:2100
+vars <- c(GLOBAL_TAS(), RF_CH4(), CONCENTRATIONS_CH4(), LIFETIME_OH(), EMISSIONS_H2())
+
+
+# H2 Impulse emissions
+ini <- here::here("inputs", "picontrol_ch4-emiss.ini")
+core <- newcore(ini, name = "h2 impulse")
+
+
+# Right now emissions are set to 0, it is unclear what values we should use. 
+H2_PULSE <- 40
+
+# Run with the default coefficient 
+setvar(core, 1850, var =  EMISSIONS_H2(), values = H2_PULSE,
+       unit = getunits(EMISSIONS_H2()))
+reset(core)
+run(core)
+out1 <- fetchvars(core, dates, vars)
+
+coef1 <- fetchvars(core, NA, COEFF_H2())[["value"]]
+
+# Double the coefficient value
+coef2 <- coef1 * 4
+setvar(core, NA, var = COEFF_H2(), values = coef2, unit = "(undefined)")
+reset(core)
+run(core)
+out2 <- fetchvars(core, dates, vars)
+
+out1$scenario <- paste0("coef H2: ", coef1)
+out2$scenario <-  paste0("coef H2: ",  coef2)
+
+rslts <- rbind(out1, out2)
+```
+
+```{r}
+rslts %>%  
+    mutate(year = year - 1850) %>% 
+    filter(year >= 0 & year <= 100) -> 
+    to_plot
+
+
+to_plot %>% 
+    ggplot() + 
+    geom_line(aes(year, value, color = scenario)) + 
+    facet_wrap("variable", scales = "free") + 
+    labs(y = NULL, x = NULL)
+```
+
+
+
+```{r}
+rslts %>% 
+    filter(variable == EMISSIONS_H2()) %>% 
+    mutate(year = year - 1850) %>% 
+    filter(year >= -2 & year < 100) %>% 
+    ggplot(aes(year, value)) + 
+    geom_point() + 
+    labs(title = "H2 Emissions", 
+         y = "Tg H2", x = "Years Since Impulse") +
+    theme_bw(base_size = 15) -> 
+    
+
+
+
+```
+
+Yes, the reseting the the coefficent works! 
