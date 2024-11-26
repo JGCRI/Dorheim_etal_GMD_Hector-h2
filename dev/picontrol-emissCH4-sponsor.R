@@ -1,16 +1,16 @@
 # Objective: Run Hector with the emission driven CH4 runs, these will be used to
-# make sure that the model dev are having the effects we expect them to, right now
-# save a copy of the "default" hector aka before any of the H2 interaction terms
-# have been implement. I suspect that this will help us understand potential
-# interactions during the dev phase. Here we do impulses of all the following
-# emissions CH4, NOx, CO, NMVOC
+# make sure that the model dev are having the effects we expect them to, this
+# specific version uses the coefficent calcualted by the sponsor.
 
 # 0. Set Up --------------------------------------------------------------------
-# Install a specific version of Hector aka the Hector that had tau OH as a potential
-# output but otherwise is default or main.
-tag <- "1e15620"
-remotes::install_github(paste0("jgcri/hector@", tag))
-library(hector)
+# TODO load the correct version of Hector to use, until the h2 dev is merged into
+# main pull you will want to use the h2 dev branch.
+#remotes::install_github("jgcri/hector@dev-h2")
+#library(hector)
+# This is where KD is actively devloping the H2 capabilites on her machince,
+# it will not be useful for others.
+devtools::load_all("/Users/dorh012/Documents/2024/H2Materials/hector")
+
 library(dplyr)
 library(ggplot2)
 
@@ -23,6 +23,8 @@ vars <- c(GLOBAL_TAS(), RF_CH4(), EMISSIONS_CH4(), EMISSIONS_CO(),
 
 DATA_DIR <- here::here("dev", "data")
 
+# Read in the default data that will be used in comparisons.
+default_rslts <- read.csv(file.path(DATA_DIR, "default_irf.csv"))
 
 # 1. Hector Runs ---------------------------------------------------------------
 
@@ -79,63 +81,45 @@ run(core)
 out5 <- fetchvars(core, dates, vars)
 shutdown(core)
 
-# 2. Calculate CH4 lifetime ----------------------------------------------------
 
+# H2 Impulse emissions
 ini <- "inputs/picontrol_ch4-emiss.ini"
-core <- newcore(ini)
-CH4_PREIND <- fetchvars(core, NA, PREINDUSTRIAL_CH4())[["value"]]
+core <- newcore(ini, name = "h2 impulse")
+# Right now emissions are set to 0, it is unclear what values we should use.
+H2_PULSE <- 40
+setvar(core, 1850, var =  EMISSIONS_H2(), values =H2_PULSE,
+       unit = getunits(EMISSIONS_H2()))
+reset(core)
+run(core)
+out6 <- fetchvars(core, dates, vars)
+shutdown(core)
 
+# 2. Plot Results --------------------------------------------------------------
+# TODO it might be good to compare the results with the default results.
+out <- rbind(out1, out2, out3, out4, out5)
 
-# Let's take a look at the CH4 impulse
-out2 %>%
-    filter(variable == CONCENTRATIONS_CH4()) %>%
-    # Change to relative since the pulse
+out <- out6 %>%
+    filter(variable %in% c(EMISSIONS_H2(), LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())) %>%
+    mutate(variable = paste0(variable, " (", units, ")")) %>%
     mutate(year = year - 1850) %>%
-    filter(year >= 0) %>%
-    mutate(value = value - CH4_PREIND) %>%
-    select(time = year, C = value) ->
-    ch4_rslts
-
-
-ch4_rslts  %>%
-    ggplot(aes(time, C)) +
-    geom_line(size = 1)
-
-
-C0 <- max(ch4_rslts$C)
-
-# Fit the model: C(t) = C0 * exp(-t / tau)
-model <- nls(C ~ C0 * exp(-time / tau),
-             start = list(C0 = C0, tau = 1), data = ch4_rslts)
-
-# Extract tau
-tau <- coef(model)["tau"]; tau
-# tau
-# 8.088113
-
-# Looking into the AR6
-# https://www.ipcc.ch/report/ar6/wg1/downloads/report/IPCC_AR6_WGI_Chapter06.pdf
-
-
-# 3. Plot Results --------------------------------------------------------------
-
-out <- rbind(out1, out2, out3, out4, out5) %>%
-    filter(scenario != "ch4 impulse")
+    filter(year >= -2 & year <= 100)
 
 ggplot(out, aes(year, value, color = scenario)) +
-    geom_line(size = 1) +
-    facet_wrap("variable", scales = "free")
+    geom_line(linewidth = 1) +
+    facet_wrap("variable", scales = "free") +
+    labs(y = NULL, x = NULL) +
+    theme_bw(base_size = 16) +
+    theme(legend.position = "none")
 
 
 
-
-
-
-
-# 4. Save Results --------------------------------------------------------------
-# Save some information about which version of Hector this came from, including
-# both the name and git tag might be over kill alas.
-out$source <- "default"
-out$git <- tag
-write.csv(out, file = file.path(DATA_DIR, "default_irf.csv"), row.names = FALSE)
+out %>%
+  #  filter(variable == "H2_emissions (Tg H2)") %>%
+    ggplot(aes(year, value, color = scenario)) +
+    geom_point(size = 3) +
+    facet_wrap("variable", scales = "free") +
+    labs(y = NULL, x = NULL) +
+    theme(legend.position = "none") +
+    theme_bw(base_size = 30) +
+    theme(legend.position = "none")
 
