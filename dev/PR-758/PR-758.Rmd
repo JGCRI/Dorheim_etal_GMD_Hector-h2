@@ -1,0 +1,338 @@
+---
+title: "PR-758: H2 effects on CH4 lifetime"
+date: "`r Sys.Date()`"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+Generates the plots for https://github.com/JGCRI/hector/pull/758. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+BASE_DIR <- here::here("dev", "PR-758")
+
+library(dplyr)
+
+#HECTOR_DIR <- "/Users/dorh012/Documents/2024/H2Materials/Hector_H2_Project/../hector"
+#devtools::load_all(HECTOR_DIR) # this is a specific version of Hector
+#TODO replace with the commit ssha 
+remotes::install_github("jgcri/hector@ch4_oh_lifetime_only")
+library(ggplot2)
+theme_set(theme_bw())
+```
+
+## Functions
+
+Demonstrate that H2 related functions functions work as expected. 
+
+```{r}
+getunits(EMISSIONS_H2())
+
+# The control run
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+hc <- newcore(ini_file, name = "control")
+run(hc)
+fetchvars(hc, NA, COEFF_H2())
+```
+
+
+
+## Different H2 Impulse Sizes 
+
+Demonstrate how changing the size of the H2 emissions pulse effects Hector results throughout the climate system. Since we have only implemented H2 impacts on CH4 lifetime these results are going to be somewhat small. 
+
+```{r}
+# Information that is constant for for all of our hector runs
+dates <- 1750:2000
+vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), LIFETIME_OH(), CONCENTRATIONS_CH4(),
+          RF_CH4(), RF_H2O_STRAT(), RF_O3_TROP(), RF_TOTAL(), GLOBAL_TAS())
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+IMPULSE_YR <- 1850
+```
+
+
+
+```{r}
+# The control run
+hc <- newcore(ini_file, name = "control")
+run(hc)
+out1 <- fetchvars(hc, dates, vars)
+```
+
+```{r}
+# Impulse 1
+H2_PULSE <- 200
+hc <- newcore(ini_file, name = paste0("h2 impulse: ", H2_PULSE))
+setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values =H2_PULSE,
+       unit = getunits(EMISSIONS_H2()))
+reset(hc)
+run(hc)
+out2 <- fetchvars(hc, dates, vars)
+```
+
+```{r}
+# Impulse 2
+H2_PULSE2 <- H2_PULSE * 2
+hc <- newcore(ini_file, name = paste0("h2 impulse: ", H2_PULSE2))
+setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values = H2_PULSE2,
+       unit = getunits(EMISSIONS_H2()))
+reset(hc)
+run(hc)
+out3 <- fetchvars(hc, dates, vars)
+```
+
+
+```{r}
+# Combine all of the results into a single data frame
+rbind(out1, out2, out3) %>%
+    mutate(year = year - IMPULSE_YR) %>%
+    filter(year >= -2) %>%
+    filter(year <= 50) ->
+    to_plot
+
+# Make sure that the plot is in the correct order
+to_plot$variable <- factor(to_plot$variable, levels = vars)
+
+to_plot %>%
+    ggplot(aes(year, value, color = scenario)) +
+    geom_line() +
+    facet_wrap("variable", scales = "free") +
+    labs(x = NULL, y = NULL) +
+    theme(legend.title = element_blank())
+```
+
+```{r, echo=FALSE}
+# remove the results dfs 
+remove("out1", "out2", "out3", "to_plot")
+```
+
+
+## Different H2 Coefficent 
+
+Demonstrate how changing the H2 coefficient can change tau OH and [CH4]
+
+```{r}
+# Information that is constant for for all of our hector runs
+dates <- 1750:2000
+vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), LIFETIME_OH(), CONCENTRATIONS_CH4(),
+          RF_CH4(), RF_H2O_STRAT(), RF_O3_TROP(), RF_TOTAL(), GLOBAL_TAS())
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+IMPULSE_YR <- 1850
+```
+
+Default H2 coefficient 
+
+```{r}
+# Impulse 1, default H2 coeff 
+H2_PULSE <- 200
+hc <- newcore(ini_file)
+setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values = H2_PULSE, unit = getunits(EMISSIONS_H2()))
+reset(hc)
+run(hc)
+out1 <- fetchvars(hc, dates, vars)
+default_ch2 <- fetchvars(hc, NA, COEFF_H2())[["value"]]
+out1$scenario <- "defualt coef H2"
+out1$coef <- default_ch2
+```
+
+Lower H2 coefficient 
+
+```{r}
+setvar(hc, NA, COEFF_H2(), values = default_ch2 * 0.5, unit = "(undefined)")
+reset(hc)
+run(hc)
+out2 <- fetchvars(hc, dates, vars)
+new_ch2 <- fetchvars(hc, NA, COEFF_H2())[["value"]]
+out2$scenario <- "lower coef H2"
+out2$coef <- new_ch2
+```
+
+
+Higher H2 coefficient 
+
+```{r}
+setvar(hc, NA, COEFF_H2(), values = default_ch2 * 1.5, unit = "(undefined)")
+reset(hc)
+run(hc)
+out3 <- fetchvars(hc, dates, vars)
+new_ch2 <- fetchvars(hc, NA, COEFF_H2())[["value"]]
+out3$scenario <- "higher coef H2"
+out3$coef <- new_ch2
+```
+
+```{r}
+# Format output for plotting
+rbind(out1, out2, out3) %>%  
+    mutate(year = year - IMPULSE_YR) %>% 
+    filter(year >= -2 & year <= 40) ->
+     to_plot
+```
+
+Confirm that the emissions are correct 
+
+```{r}
+to_plot %>% 
+    filter(variable == EMISSIONS_H2()) %>%  
+    ggplot(aes(year, value, color = scenario, linetype = scenario)) + 
+    geom_line(size = 1) + 
+    labs(y = getunits(EMISSIONS_H2()), x = NULL) + 
+    theme(legend.title = element_blank())
+```
+
+
+```{r}
+to_plot %>% 
+    filter(variable %in% c(LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())) -> 
+    to_plot
+
+plot_these_vars <- c(LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())
+to_plot$variable <- factor(to_plot$variable , levels = plot_these_vars)
+
+to_plot %>% 
+    ggplot(aes(year, value, color = scenario, linetype = scenario)) + 
+    geom_line(size = 1) + 
+    labs(y = NULL, x = NULL) + 
+    facet_wrap("variable", scales = "free", ncol = 1) + 
+    theme(legend.title = element_blank())
+
+
+
+```
+
+
+
+
+```{r, echo=FALSE}
+# remove the results dfs 
+remove("out1", "out2", "out3", "to_plot")
+```
+
+
+## GWP100 
+
+Sand et al. report the AWGP 100 for H2 from various ESMs have included results broken down by each of the three indirect $H_2$ effects so we can use that to compare our $H_2$ implementation here. 
+
+$$\text{GWP}_{100} = \frac{\int_{0}^t \Delta \text{RF H}_2}{\int_{0}^t \Delta \text{RF CO}_2}$$
+where the $\Delta \text{RF H}_2$ is from a pulse of 1 Tg of $\text{H}_2$ and $\Delta \text{RF CO}_2}$ is from a pulse of 1 Tg of $\text{CO}_2}$. 
+
+### CO2 pulse runs
+
+Since we don't have a emission driven pi control (for CO2) we have to apply the pulse on top of a control run. 
+
+```{r}
+# Set information we would like to collect from the hector runs
+dates <- 1750:2100
+vars <- c(c(RF_CO2(), RF_TOTAL(), GLOBAL_TAS(), LIFETIME_OH(), RF_O3_TROP(),
+            FFI_EMISSIONS(), RF_H2O_STRAT()))
+
+# Our control run 
+inifile <- file.path(HECTOR_DIR, "inst", "input", "hector_ssp245.ini")
+hc <- newcore(inifile, name = "control")
+run(hc)
+fetchvars(hc, dates, vars) %>%
+    rename(control = value) ->
+    out1
+shutdown(hc)
+
+# Impulse run
+IMPULSE_YR <- 1850
+inifile <- file.path(HECTOR_DIR, "inst", "input", "hector_ssp245.ini")
+hc <- newcore(inifile, name = "impulse")
+run(hc)
+contorl_emiss_val <- fetchvars(hc, IMPULSE_YR, FFI_EMISSIONS())$value
+# We want our pulse to only equivalent to 1 Tg of CO2 but Hector inputs are in 
+# Pg C so need to convert before adding the pulse to 
+CO2_Tg <- 1 
+CONVERSION_FACTOR <- (12.01/44.01) * 1e-3 # convert from Tg CO2 to PgC 
+impulse <- contorl_emiss_val + (CO2_Tg * CONVERSION_FACTOR)
+setvar(hc, IMPULSE_YR, FFI_EMISSIONS(), impulse, getunits(FFI_EMISSIONS()))
+reset(hc)
+run(hc)
+fetchvars(hc, dates, vars) %>%
+    rename(impulse = value) ->
+    out2
+shutdown(hc)
+
+# Becasue of the way that Hector's carbon cycle runs offset the impulse year by 1 
+out1 %>%
+    cbind(impulse = out2$impulse) %>%
+    mutate(value = impulse - control) %>%
+    mutate(year = year - (IMPULSE_YR+1)) %>%
+    filter(year >= 0) %>%
+    filter(year <= 100) %>%
+    select(year, variable, value, units) ->
+    co2_100_rslts
+```
+
+
+### H2 pulse runs
+
+```{r}
+# Information that is constant for for all of our hector runs
+vars <- c(EMISSIONS_H2(), EMISSIONS_CH4(), CONCENTRATIONS_CH4(), LIFETIME_OH(),
+          RF_CH4(), RF_TOTAL(), GLOBAL_TAS(),
+          RF_H2O_STRAT(), RF_O3_TROP(), RF_CO2())
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+IMPULSE_YR <- 1850
+
+# Impulse 1
+H2_PULSE <- 1
+hc <- newcore(ini_file, name = paste0("h2 impulse: ", H2_PULSE))
+setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values =H2_PULSE,
+       unit = getunits(EMISSIONS_H2()))
+reset(hc)
+run(hc)
+
+# Format output 
+fetchvars(hc, dates, vars) %>%
+    mutate(year = year - IMPULSE_YR) %>%
+    filter(year >= 0) %>%
+    filter(year <= 100) %>%
+    select(year, variable, value, units) ->
+    h2_100_rslts
+```
+
+Integrate the pulse run results and calculate the AGWP100 
+
+```{r}
+# Calculate the GWP100 as the ratio of the cumulative RF change 100 years (integrated)
+co2_integral <- summarise(co2_100_rslts, value = sum(value), .by = c("variable"))
+h2_integral <- summarise(h2_100_rslts, value = sum(value), .by = c("variable"))
+
+# This is consistent with the model mean GWP 100 due to CH4 from Sand et al.
+# Supplementary Table 6
+GWP100 <- round(h2_integral$value[h2_integral$variable == "RF_tot"] / co2_integral$value[co2_integral$variable == "RF_tot"], 3)
+
+
+paste0("GWP100 H2: ", GWP100)
+```
+
+
+Looking at Sand et al. Supplementary Table 6 the GWP100 of hydrogen due to methane ranges from 4.9 to 5.7 with a model mean of 5.1, which is not too far off what we are getting from Hector at the moment! 
+
+
+RF response to the H2 pulse
+
+```{r}
+h2_100_rslts$type <- "H2"
+co2_100_rslts$type <- "CO2"
+
+
+h2_100_rslts %>%
+    bind_rows(co2_100_rslts) %>%
+    filter(variable == RF_TOTAL()) %>%
+    ggplot(aes(year, value, color = type))+
+    geom_line() +
+    labs(title = "RF from 1Tg Emissions",
+         subtitle = paste0("GWP100: ", GWP100),
+         caption = "H2 impacts Tau OH",
+         x = "years since emissions pulse",
+         y = "Total RF (Wm-2)") +
+    theme(legend.title = element_blank())
+```
