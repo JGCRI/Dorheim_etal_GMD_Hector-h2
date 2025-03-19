@@ -19,10 +19,11 @@ BASE_DIR <- here::here("dev", "PR-758")
 
 library(dplyr)
 
-#HECTOR_DIR <- "/Users/dorh012/Documents/2024/H2Materials/Hector_H2_Project/../hector"
-#devtools::load_all(HECTOR_DIR) # this is a specific version of Hector
+HECTOR_DIR <- "/Users/dorh012/Documents/2024/H2Materials/Hector_H2_Project/../hector"
+devtools::load_all(HECTOR_DIR) # this is a specific version of Hector
 #TODO replace with the commit ssha 
-remotes::install_github("jgcri/hector@ch4_oh_lifetime_only")
+#remotes::install_github("jgcri/hector@ch4_oh_lifetime_only", force = TRUE)
+library(hector)
 library(ggplot2)
 theme_set(theme_bw())
 ```
@@ -33,6 +34,12 @@ Demonstrate that H2 related functions functions work as expected.
 
 ```{r}
 getunits(EMISSIONS_H2())
+
+COEFF_H2 <-function(){
+    "CH2"
+}
+
+
 
 # The control run
 ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
@@ -50,7 +57,7 @@ Demonstrate how changing the size of the H2 emissions pulse effects Hector resul
 ```{r}
 # Information that is constant for for all of our hector runs
 dates <- 1750:2000
-vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), LIFETIME_OH(), CONCENTRATIONS_CH4(),
+vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), CH4_LIFETIME_OH(), CONCENTRATIONS_CH4(),
           RF_CH4(), RF_H2O_STRAT(), RF_O3_TROP(), RF_TOTAL(), GLOBAL_TAS())
 ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
 IMPULSE_YR <- 1850
@@ -120,7 +127,7 @@ Demonstrate how changing the H2 coefficient can change tau OH and [CH4]
 ```{r}
 # Information that is constant for for all of our hector runs
 dates <- 1750:2000
-vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), LIFETIME_OH(), CONCENTRATIONS_CH4(),
+vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), CH4_LIFETIME_OH(), CONCENTRATIONS_CH4(),
           RF_CH4(), RF_H2O_STRAT(), RF_O3_TROP(), RF_TOTAL(), GLOBAL_TAS())
 ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
 IMPULSE_YR <- 1850
@@ -188,10 +195,10 @@ to_plot %>%
 
 ```{r}
 to_plot %>% 
-    filter(variable %in% c(LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())) -> 
+    filter(variable %in% c(CH4_LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())) -> 
     to_plot
 
-plot_these_vars <- c(LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())
+plot_these_vars <- c(CH4_LIFETIME_OH(), CONCENTRATIONS_CH4(), GLOBAL_TAS())
 to_plot$variable <- factor(to_plot$variable , levels = plot_these_vars)
 
 to_plot %>% 
@@ -228,7 +235,7 @@ Since we don't have a emission driven pi control (for CO2) we have to apply the 
 ```{r}
 # Set information we would like to collect from the hector runs
 dates <- 1750:2100
-vars <- c(c(RF_CO2(), RF_TOTAL(), GLOBAL_TAS(), LIFETIME_OH(), RF_O3_TROP(),
+vars <- c(c(RF_CO2(), RF_TOTAL(), GLOBAL_TAS(), CH4_LIFETIME_OH(), RF_O3_TROP(),
             FFI_EMISSIONS(), RF_H2O_STRAT()))
 
 # Our control run 
@@ -275,7 +282,7 @@ out1 %>%
 
 ```{r}
 # Information that is constant for for all of our hector runs
-vars <- c(EMISSIONS_H2(), EMISSIONS_CH4(), CONCENTRATIONS_CH4(), LIFETIME_OH(),
+vars <- c(EMISSIONS_H2(), EMISSIONS_CH4(), CONCENTRATIONS_CH4(), CH4_LIFETIME_OH(),
           RF_CH4(), RF_TOTAL(), GLOBAL_TAS(),
           RF_H2O_STRAT(), RF_O3_TROP(), RF_CO2())
 ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")

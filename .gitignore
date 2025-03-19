@@ -4,3 +4,5 @@
 .Ruserdata
 Hector_H2_Project.Rproj
 *.RS_Store
+*.DS_Store
+*.zip
