@@ -19,10 +19,8 @@ BASE_DIR <- here::here("dev", "PR-758")
 
 library(dplyr)
 
-HECTOR_DIR <- "/Users/dorh012/Documents/2024/H2Materials/Hector_H2_Project/../hector"
-devtools::load_all(HECTOR_DIR) # this is a specific version of Hector
-#TODO replace with the commit ssha 
-#remotes::install_github("jgcri/hector@ch4_oh_lifetime_only", force = TRUE)
+remotes::install_github("jgcri/hector@c2c5e733be8631e675ce2ba96db908dbd58d3362", 
+                        force = TRUE)
 library(hector)
 library(ggplot2)
 theme_set(theme_bw())
