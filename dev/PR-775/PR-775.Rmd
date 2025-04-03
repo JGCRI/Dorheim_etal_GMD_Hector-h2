@@ -87,6 +87,7 @@ setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values =H2_PULSE,
 reset(hc)
 run(hc)
 out2 <- fetchvars(hc, dates, vars)
+
 ```
 Let's take a look at the difference results from an impulse of H2 emissions in 1850 and a pi control run.  
 
@@ -239,4 +240,61 @@ h2_100_rslts %>%
          x = "years since emissions pulse",
          y = "Total RF (Wm-2)") +
     theme(legend.title = element_blank())
+```
+
+
+# Demonstrate how to access/change the coefficent 
+
+
+```{r}
+
+
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+IMPULSE_YR <- 1850
+
+
+# Information that is constant for for all of our hector runs
+dates <- 1750:2000
+vars <- c(EMISSIONS_CH4(), EMISSIONS_H2(), CH4_LIFETIME_OH(), CONCENTRATIONS_CH4(),
+          RF_CH4(), RF_H2O_STRAT(), RF_O3_TROP(), RF_TOTAL(), GLOBAL_TAS())
+ini_file <- file.path(BASE_DIR, "inputs", "picontrol_ch4-emiss.ini")
+IMPULSE_YR <- 1850
+
+# The control run
+hc <- newcore(ini_file, name = "control")
+setvar(hc, NA, COEFF_H2(), values = 0, unit = "(undefined)")
+run(hc)
+control <- fetchvars(hc, dates, vars)
+
+
+# Default coeff 
+H2_PULSE <- 500
+hc <- newcore(ini_file, name = "default rho H2O H2 coeff.")
+setvar(hc, NA, COEFF_H2(), values = 0, unit = "(undefined)")
+rho1 <- fetchvars(hc, NA, "rho_h2o_h2")
+setvar(hc, IMPULSE_YR, var =  EMISSIONS_H2(), values = H2_PULSE,
+       unit = getunits(EMISSIONS_H2()))
+reset(hc)
+run(hc)
+out1 <- fetchvars(hc, dates, vars) %>%    mutate(value = value - control$value)
+
+
+# Now let's increase the coeff
+setvar(hc, NA, "rho_h2o_h2", values = rho1$value * 3, unit = rho1$units)
+reset(hc)
+run(hc)
+
+fetchvars(hc, dates, vars) %>% 
+    mutate(scenario = "higher rho H2O H2 coeff.") %>% 
+    mutate(value = value - control$value) -> 
+    out2
+
+
+bind_rows(out1, out2) %>% 
+    filter(year %in% 1845:1900) %>% 
+    ggplot(aes(year, value, color = scenario)) + 
+    geom_line() + 
+    facet_wrap("variable", scales = "free") + 
+    labs(y = NULL, x = NULL)
+
 ```
