@@ -1,0 +1,54 @@
+---
+title: "Trop. O3 Implementation - Sand"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(hector)
+
+system.file(package = "hector", "input/tables/ssp245_emiss-constraints_rf.csv")  %>%  
+    read.csv(comment.char = ";") -> 
+    emissions_table
+```
+
+
+Default Hector 
+
+```{r}
+cof_CH4 <- 5
+cof_NOX <- 0.125
+cof_CO <- 0.001 
+cof_NMVOC <- 0.0033 
+
+
+trop_O3_burden <- cof_CH4 * log(emissions_table$CH4_constrain) + cof_NOX * emissions_table$NOX_emissions +
+    cof_CO * emissions_table$CO_emissions + cof_NMVOC * emissions_table$NMVOC_emissions
+rf_o3 <- 0.042 * trop_O3_burden
+
+default_o3 <- data.frame(year = c(emissions_table$Date, emissions_table$Date), 
+                         variable = rep(c(CONCENTRATIONS_O3(), RF_O3_TROP()), each = nrow(emissions_table)), 
+                         value = c(trop_O3_burden, rf_o3), 
+                         method = "hector default")
+
+```
+
+
+
+
+
+Sand Supplementary Table 4: Similar to Supplementary Table 3, but for changes due to hydrogen only (PERT_H2-CTRL) (i.e. do not include the methane-induced changes) has a multimodel mean of 4.09 Trop O3 per H2 flux 
+
+```{r}
+
+
+trop_O3_burden <- cof_CH4 * log(emissions_table$CH4_constrain) + cof_NOX * emissions_table$NOX_emissions +
+    cof_CO * emissions_table$CO_emissions + cof_NMVOC * emissions_table$NMVOC_emissions 
+rf_o3 <- 0.042 * trop_O3_burden
+
+
+
+```
