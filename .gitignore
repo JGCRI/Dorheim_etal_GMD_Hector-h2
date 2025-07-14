@@ -8,4 +8,8 @@ Hector_H2_Project.Rproj
 *.zip
 *.html
 */scratch/
+
+
+# TODO, eventually remove the following from the gitignore file
+session_info.txt
 **/figs/
