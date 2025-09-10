@@ -1,0 +1,48 @@
+# Define the global constants and environment for this project.
+# TODO
+# Should probably switch to renv.
+# Will need to make sure that the correct version of Hector is being called.
+
+HECTOR_DIR <- "../hector"
+
+devtools::load_all(HECTOR_DIR)
+
+library(ggplot2)
+library(dplyr)
+
+theme_set(theme_bw())
+
+
+# Quick save the session info
+session_info <- sessionInfo()
+output_file <- "session_info.txt"
+sink(output_file)
+print(session_info)
+sink()
+
+
+# Custom helper function that saves a plot and the data used in the figure
+# Args
+#   DIR: location where to write the figure and the csv out to
+#   name: base name for the figure and the data
+#   type: pdf (or png) the type of figure to save
+#   WIDTH: default set to 10, controls the width of the figure
+#   HEIGHT: default set to 5, controls the height of the figure
+custom_ggsave <- function(DIR, name, type = "pdf", WIDTH = 10, HEIGHT = 5){
+
+    # Make sure the directory exists before setting
+    # up the file name!
+    stopifnot(dir.exists(DIR))
+    stopifnot(any(type %in% c("pdf", "png")))
+
+    # Save a copy of the files and the underlying data for the figure!
+    ggsave(plot = p, filename = file.path(DIR, paste0(name, ".", type )), width = WIDTH, height = HEIGHT)
+    write.csv(p$data, file = file.path(DIR, paste0(name, "_data.csv")), row.names = FALSE)
+
+}
+
+
+
+
+
+

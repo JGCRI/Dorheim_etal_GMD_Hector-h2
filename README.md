@@ -1,2 +1,2 @@
-# Hector_H2_Project
-Materials used to experiment with and benchmark the H2 development in Hector 
+# Hector H2 Project
+Materials used to experiment with and benchmark the H2 development in Hector. 
