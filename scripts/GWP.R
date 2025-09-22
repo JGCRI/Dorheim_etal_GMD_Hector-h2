@@ -1,7 +1,9 @@
-# Description: GWP 20 and 100  calculations for H2!
+# Description: GWP 100  calculations for H2!
 
 # 0. Set Up --------------------------------------------------------------------
 source("scripts/constants.R")
+
+FIGS_DIR <- "figs"
 
 
 RSLT_DATES <- 1750:2100
@@ -219,21 +221,24 @@ sand_GWP %>%
 
 
 setdiff(sand_GWP_models$variable, GWP100$variable)
-setdiff( GWP100$variable, sand_GWP_models$variable)
+setdiff(GWP100$variable, sand_GWP_models$variable)
 
 GWP100_var %>%
     filter(variable %in% c("CH4", "O3", "strat_H2O", "Total")) ->
     GWP100_var
 
 ggplot() +
-    geom_point(data = sand_GWP_models, aes(variable, GWP),
-               position = position_jitter(height = NULL, seed = 42, width = 0.1),
+    geom_point(data = sand_GWP_models, aes(variable, GWP, color = "Sand et al."),
+               position = position_jitter(height = 0, seed = 42, width = 0.1),
                alpha = 0.5, size = 3, shape = 20) +
-    geom_point(data = sand_GWP_MM, aes(variable, GWP), size = 3, shape = 19) +
-   # geom_point(data = GWP100, aes(variable, GWP, color = "hector"), size = 6, shape = 18) +
-    geom_point(data = GWP100_var, aes(variable, GWP, color = "hector"), size = 6, shape = 18, alpha = 0.8) +
-    theme(legend.title = element_blank()) +
-    labs(y = "GWP100 H2", x = NULL)
+    geom_point(data = sand_GWP_MM, aes(variable, GWP, color = "Sand et al."), size = 3, shape = 19) +
+    geom_point(data = GWP100_var, aes(variable, GWP, color = "Hector"), size = 6, shape = 18, alpha = 0.8) +
+    theme(legend.title =  element_blank()) +
+    labs(y = "GWP100 H2", x = NULL) +
+    scale_color_manual(values = c("Sand et al." = "black", "Hector" = COLORS[1])) ->
+    plot; plot
+
+custom_ggsave(p = plot, DIR = FIGS_DIR, name = "GWP_100", WIDTH = 6, HEIGHT = 4)
 
 
 

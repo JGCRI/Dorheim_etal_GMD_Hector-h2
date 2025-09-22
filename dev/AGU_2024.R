@@ -42,7 +42,7 @@ shutdown(core)
 ini <- "inputs/picontrol_ch4-emiss.ini"
 core <- newcore(ini, name = "h2 impulse")
 # Right now emissions are set to 0, it is unclear what values we should use.
-H2_PULSE <- 200
+H2_PULSE <- 400
 setvar(core, 1850, var =  EMISSIONS_H2(), values = H2_PULSE,
        unit = getunits(EMISSIONS_H2()))
 reset(core)
@@ -55,7 +55,7 @@ shutdown(core)
 out <- rbind(out1, out2)
 
 out <- out2 %>%
-    filter(variable %in% c(LIFETIME_OH(), CONCENTRATIONS_CH4(), RF_CH4(),
+    filter(variable %in% c("TAU_OH", CONCENTRATIONS_CH4(), RF_CH4(),
                            RF_H2O_STRAT(), RF_TOTAL(), GLOBAL_TAS())) %>%
     mutate(variable = paste0(variable, " (", units, ")")) %>%
     mutate(year = year - 1850) %>%

@@ -52,6 +52,7 @@ rbind(out1, out2) %>%
 
 
 rbind(out1, out2) %>%
+    filter(year >= 1850) %>%
     distinct() %>%
     filter(grepl(pattern = "RF", x = variable)) %>%
     spread(scenario, value) %>%
@@ -61,20 +62,24 @@ rbind(out1, out2) %>%
 diff_df   %>%
     filter(variable != RF_TOTAL()) ->
     componets
+
 diff_df   %>%
-    filter(variable == RF_TOTAL()) ->
+    filter(variable == RF_TOTAL()) %>%
+    # Change the variable name for nice plot labels.
+    mutate(variable = "Total ERF") ->
     total
 
 
     ggplot() +
     geom_area(data = componets, aes(year, diff, fill = variable)) +
-    geom_line(data = total, aes(year, diff, color = "Total RF"), size = 1) +
-    labs(y = UNITS,
-         title = "RF",
-         subtitle = "h2 effects - default",
+    geom_line(data = total, aes(year, diff, color = variable), size = 1) +
+    labs(y = expression(Delta~ "W/m2"),
          x = NULL) +
-        scale_color_manual(values = c("Total RF" = "black"))
+        scale_color_manual(values = c("Total ERF" = "black")) +
+        theme(legend.title = element_blank()) ->
+        plot; plot
 
+    custom_ggsave(p = plot, DIR = FIGS_DIR, name = "histERF", WIDTH = 8, HEIGHT = 4)
 
 
     rbind(out1, out2) %>%
