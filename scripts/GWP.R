@@ -109,6 +109,9 @@ get_h2_irf <- function(hc, name){
 # with all the indirect climate effects
 ini_file <- "inputs/hector_picontrol.ini"
 hc <- newcore(ini = ini_file)
+# What happens when we adjust rho_h2o_h2=0.00019      ; (W m −2 H2 Tg-1) Sand et al. 2023, 10.1038/s43247-023-00857-8
+#setvar(hc, NA, "rho_h2o_h2", 0.00013, "(undefined)")
+
 out1 <- get_h2_irf(hc, name = "Total")
 
 
@@ -126,7 +129,7 @@ reset(hc)
 setvar(hc, NA, "CO3_H2", 0, "(undefined)")
 reset(hc)
 
-# with all the indirect climate effects
+
 out2 <- get_h2_irf(hc, name = "strat_H2O")
 
 
@@ -138,7 +141,7 @@ reset(hc)
 setvar(hc, NA, "rho_h2o_h2", 0, "(undefined)")
 reset(hc)
 
-# with all the indirect climate effects
+
 out3 <- get_h2_irf(hc, name = "O3")
 
 
@@ -193,13 +196,23 @@ h2_integral %>%
     mutate(GWP =round(h2_value/ co2, 3)) %>%
     select(name, GWP, variable) %>%
     mutate(Name = "hector") %>%
-    mutate(variable = if_else(variable == RF_TOTAL(), "Total", variable)) %>%
     mutate(variable = if_else(variable == "RF_H2O_strat", "strat_H2O", variable)) %>%
     mutate(variable = if_else(variable == "RF_O3_trop", "O3", variable)) %>%
     mutate(variable = if_else(variable == "RF_CH4", "CH4", variable)) ->
     GWP100_var
 
+# Calculate the total as they did in Sand et al
 
+GWP100_var %>%
+    filter(variable %in% c("strat_H2O", "O3", "CH4")) %>%
+    summarise(GWP = sum(GWP), .by = c(name, Name)) %>%
+    mutate(variable = "Total") ->
+    total_RF
+
+
+GWP100_var %>%
+    filter(variable %in% c("strat_H2O", "O3", "CH4")) %>%
+    mutate(percent = signif(x = 100 * GWP/total_RF$GWP, 2))
 
 
 # 4. Figures  ------------------------------------------------------------------
@@ -220,11 +233,9 @@ sand_GWP %>%
     sand_GWP_MM
 
 
-setdiff(sand_GWP_models$variable, GWP100$variable)
-setdiff(GWP100$variable, sand_GWP_models$variable)
-
 GWP100_var %>%
-    filter(variable %in% c("CH4", "O3", "strat_H2O", "Total")) ->
+    filter(variable %in% c("CH4", "O3", "strat_H2O", "Total")) %>%
+    rbind(data.frame(name = "Total", GWP = total_RF$GWP, Name = "hector", variable = "Total")) ->
     GWP100_var
 
 ggplot() +
@@ -235,10 +246,10 @@ ggplot() +
     geom_point(data = GWP100_var, aes(variable, GWP, color = "Hector"), size = 6, shape = 18, alpha = 0.8) +
     theme(legend.title =  element_blank()) +
     labs(y = "GWP100 H2", x = NULL) +
-    scale_color_manual(values = c("Sand et al." = "black", "Hector" = COLORS[1])) ->
+    scale_color_manual(values = c("Sand et al." = "black", "Hector" = "blue")) ->
     plot; plot
 
-custom_ggsave(p = plot, DIR = FIGS_DIR, name = "GWP_100", WIDTH = 6, HEIGHT = 4)
+custom_ggsave(p = plot, DIR = FIGS_DIR, name = "GWP_100", WIDTH = 5, HEIGHT = 3.3)
 
 
 

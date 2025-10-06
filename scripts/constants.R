@@ -4,13 +4,14 @@
 # Will need to make sure that the correct version of Hector is being called.
 
 HECTOR_DIR <- "../hector"
+FIGS_DIR <- "figs"
 
 devtools::load_all(HECTOR_DIR)
 
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
-
+library(tidyr)
 
 theme_set(theme_bw())
 
@@ -53,7 +54,7 @@ custom_ggsave <- function(p, DIR, name, type = "png", WIDTH = 10, HEIGHT = 5){
       for(i in 1:n_layers){
 
           out <- p$layers[[i]]$data
-          write.csv(out, file = file.path(DIR, paste0(name, "_data_L",i, ".csv")), row.names = FALSE)
+          write.csv(out, file = file.path(DIR, "fig-data", paste0(name, "_data_L",i, ".csv")), row.names = FALSE)
 
       }
 
