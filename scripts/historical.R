@@ -56,11 +56,6 @@ ggplot() +
 
 custom_ggsave(p = plot, DIR = FIGS_DIR, name = "hist_H2", WIDTH = 8, HEIGHT = 4)
 
-
-
-
-
-
 # 3. RF Plot -------------------------------------------------------------------
 
 VAR <- RF_TOTAL()
@@ -73,7 +68,8 @@ rbind(out1, out2) %>%
     geom_line() +
     labs(title = VAR,
          y = UNITS,
-         x = NULL)
+         x = NULL) ->
+    total_RF
 
 
 rbind(out1, out2) %>%
@@ -97,7 +93,7 @@ diff_df   %>%
 
 ggplot() +
     geom_area(data = componets, aes(year, diff, fill = variable)) +
-    geom_line(data = total, aes(year, diff, color = variable), size = 1) +
+    geom_line(data = total, aes(year, diff, color = variable), linewidth = 1) +
     labs(y = expression(Delta~ "W/m2"),
          x = NULL) +
     scale_color_manual(values = c("Total ERF" = "black")) +
@@ -111,14 +107,23 @@ rbind(out1, out2) %>%
     distinct() %>%
     spread(scenario, value) %>%
     mutate(AE = abs(`h2 effects` - default)) %>%
-    summarise(MAE = mean(AE), .by = "variable")
+    summarise(MAE = mean(AE), .by = "variable") %>%
+    filter(variable %in% c("RF_tot", "global_tas")) %>%
+    mutate(MAE = signif(MAE, digits = 2)) ->
+    historcal_changes
+
+write_results(name = "Historical MAE", val = historcal_changes)
+
 
 componets %>%
     select(year, variable, num = diff) %>%
     left_join(total %>% select(year, tot = diff)) %>%
     mutate(percent = 100 * (num/tot)) %>%
-    summarise(percent = mean(percent), .by = variable) ->
+    summarise(percent = mean(percent), .by = variable) %>%
+    mutate(percent = signif(percent, digits = 3)) ->
     mean_percent_rf; mean_percent_rf
+
+write_results(name = "Historical RF % Change by componet", val = mean_percent_rf)
 
 
 mean_percent_rf %>%
@@ -149,7 +154,7 @@ diff_df %>%
 
 diff_df %>%
     ggplot(aes(year, diff, color = variable)) +
-    geom_line(size = 1) +
+    geom_line(linewidth = 1) +
     theme(legend.title = element_blank()) +
     labs(x = "Year", y = "% Difference") ->
     plot; plot

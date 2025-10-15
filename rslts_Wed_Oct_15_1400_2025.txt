@@ -1,0 +1,22 @@
+Hector’s total GWP100  is 11.99 
+-----------------------
+contribution to GWP100 by %
+name, GWP, variable, Name, percent
+Total, 4.353, O3, hector, 36
+Total, 2.749, strat_H2O, hector, 23
+Total, 4.888, CH4, hector, 41
+-----------------------
+-----------------------
+Historical MAE
+variable, MAE
+global_tas, 0.0048
+RF_tot, 0.0089
+-----------------------
+-----------------------
+Historical RF % Change by componet
+variable, percent
+RF_CH4, 52.4
+RF_CO2, 9.56
+RF_H2O_strat, 11.2
+RF_O3_trop, 27.1
+-----------------------

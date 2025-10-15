@@ -109,8 +109,6 @@ get_h2_irf <- function(hc, name){
 # with all the indirect climate effects
 ini_file <- "inputs/hector_picontrol.ini"
 hc <- newcore(ini = ini_file)
-# What happens when we adjust rho_h2o_h2=0.00019      ; (W m −2 H2 Tg-1) Sand et al. 2023, 10.1038/s43247-023-00857-8
-#setvar(hc, NA, "rho_h2o_h2", 0.00013, "(undefined)")
 
 out1 <- get_h2_irf(hc, name = "Total")
 
@@ -212,7 +210,14 @@ GWP100_var %>%
 
 GWP100_var %>%
     filter(variable %in% c("strat_H2O", "O3", "CH4")) %>%
-    mutate(percent = signif(x = 100 * GWP/total_RF$GWP, 2))
+    mutate(percent = signif(x = 100 * GWP/total_RF$GWP, 2)) ->
+    GWP_by_percent
+
+
+
+# Write the results mentioned in the manuscript text to file
+write_results(name = "Hector’s total GWP100  is", val = total_RF$GWP)
+write_results(name = "contribution to GWP100 by %", val = GWP_by_percent)
 
 
 # 4. Figures  ------------------------------------------------------------------
@@ -241,16 +246,16 @@ GWP100_var %>%
 ggplot() +
     geom_point(data = sand_GWP_models, aes(variable, GWP, color = "Sand et al."),
                position = position_jitter(height = 0, seed = 42, width = 0.1),
-               alpha = 0.5, size = 3, shape = 20) +
+               alpha = 0.5, shape = 20) +
     geom_point(data = sand_GWP_MM, aes(variable, GWP, color = "Sand et al."), size = 3, shape = 19) +
-    geom_point(data = GWP100_var, aes(variable, GWP, color = "Hector"), size = 6, shape = 18, alpha = 0.8) +
+    geom_point(data = GWP100_var, aes(variable, GWP, color = "Hector"), size = 4, shape = 18, alpha = 1) +
     theme(legend.title =  element_blank()) +
     labs(y = "GWP100 H2", x = NULL) +
-    scale_color_manual(values = c("Sand et al." = "black", "Hector" = "blue")) ->
+  #  scale_color_manual(values = c("Sand et al." = "#4682B4", "Hector" = "red")) ->
+    scale_color_manual(values = c("Sand et al." = "black", "Hector" = "red")) ->
     plot; plot
 
 custom_ggsave(p = plot, DIR = FIGS_DIR, name = "GWP_100", WIDTH = 5, HEIGHT = 3.3)
-
 
 
 

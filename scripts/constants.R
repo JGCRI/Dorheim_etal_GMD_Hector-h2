@@ -65,6 +65,47 @@ custom_ggsave <- function(p, DIR, name, type = "png", WIDTH = 10, HEIGHT = 5){
 }
 
 
+write_results <- function(name, val, info = NULL) {
+
+
+    # function that writes results mentioned in the text of the manuscript
+    # out to a single file. Each file will be time stamped.
+    #
+    # Args
+    #   name: name of value to include the results file
+    #   val: value of metric or a small table to to write out
+    #   info: string of some additional information if it would be helpful
+    #
+    # Returns: nothing but a txt file should be save to the root directory
+    #
+    # Note: The value of the metric is rounded to 3 sig figs when outputted
+
+
+    timestamp <- format(Sys.time(), "%a_%b_%d_%H00_%Y")
+    fname <- paste0(paste("rslts", timestamp, sep = "_"), ".txt")
+
+    if(length(val) == 1){
+
+        line <- paste(name, val, info)
+        write(line, file = fname, append = TRUE)
+
+    }
+
+    if(is.data.frame(val)){
+
+        write("-----------------------", file = fname, append = TRUE)
+        write(name, file = fname, append = TRUE)
+
+        write.table(x = val, file = fname, append = TRUE,quote = FALSE, row.names = FALSE, sep = ", ")
+        write("-----------------------", file = fname, append = TRUE)
+
+    }
+
+
+}
+
+
+
 
 
 
