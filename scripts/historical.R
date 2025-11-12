@@ -1,4 +1,4 @@
-# Description: GWP 100  calculations for H2!
+# Description: the historical stand alone hector run.
 
 # 0. Set Up --------------------------------------------------------------------
 source("scripts/constants.R")
@@ -17,6 +17,23 @@ Kt_Tg <- 0.001
     mutate(units = getunits(EMISSIONS_H2()),
            variable = EMISSIONS_H2()) ->
     hist_h2_inputs
+
+hist_h2_inputs %>%
+    filter(year %in% 1750:1755) %>%
+    pull(value) %>%
+    mean ->
+    PI_mean
+
+
+data.frame(year = 1745:1749,
+           value = PI_mean,
+           units = getunits(EMISSIONS_H2()),
+           variable = EMISSIONS_H2()) %>%
+    rbind(hist_h2_inputs) ->
+    hist_h2_inputs
+
+
+write.csv(hist_h2_inputs, file = "data/hist_h2_inputs.csv", row.names = FALSE)
 
 # Dates to save
 RSLT_DATES <- 1750:2022
