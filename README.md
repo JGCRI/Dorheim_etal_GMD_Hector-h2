@@ -1,2 +1,3 @@
-# Hector H2 Project
-Materials used to experiment with and benchmark the H2 development in Hector. 
+# Dorheim et al. GMD H2 Manuscript
+
+Materials, scripts and data used to prepare the H2 Hector GMD manuscript for submission to GMD.
