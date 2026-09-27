@@ -1,6 +1,6 @@
 # Run all the analysis and data visualization scripts for the manuscript.
 
-files <- c("GWP.R", "historical.R")
+files <- c("1.inputs.R","2.GWP.R", "2.historical.R" )
 
 for(f in files){
 
